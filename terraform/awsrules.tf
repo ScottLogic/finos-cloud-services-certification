@@ -11,7 +11,7 @@ resource "aws_s3_bucket" "s3" {
 resource "aws_s3_bucket_object" "rules_jar" {
   bucket = "${aws_s3_bucket.s3.id}"
   key = "rules.jar"
-  source = "../../../target/aws-rules-1.0-SNAPSHOT.jar"
+  source = "../target/aws-rules-1.0-SNAPSHOT.jar"
 }
 
 resource "aws_iam_role" "lambda_iam_test" {
