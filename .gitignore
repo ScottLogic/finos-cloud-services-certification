@@ -6,3 +6,8 @@ target
 *.iws
 *.iml
 *.ipr
+
+### terraform state ###
+terraform.tfstate
+terraform.tfstate.backup
+

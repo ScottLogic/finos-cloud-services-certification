@@ -39,7 +39,6 @@
     </dependencies>
 
     <build>
-        <finalName>aws-rules}-${project.version}</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

@@ -1,19 +1,3 @@
-provider "aws" {
-  region = "eu-west-2"
-}
-
-resource "aws_s3_bucket" "s3" {
-  bucket = "terraform-test-config-rules"
-  acl = "private"
-  region = "eu-west-2"
-}
-
-resource "aws_s3_bucket_object" "rules_jar" {
-  bucket = "${aws_s3_bucket.s3.id}"
-  key = "rules.jar"
-  source = "../target/aws-rules-1.0-SNAPSHOT.jar"
-}
-
 resource "aws_iam_role" "lambda_iam_test" {
   name = "lambda_iam_role_for_rules_test"
 
@@ -54,7 +38,7 @@ resource "aws_lambda_function" "lambda_test_1" {
   s3_bucket = "${aws_s3_bucket.s3.id}"
   s3_key = "${aws_s3_bucket_object.rules_jar.key}"
   function_name = "lambda_rules_test_1"
-  handler = "com.scottlogic.test.SecureTransportTester::handle"
+  handler = "com.scottlogic.compliance.dynamodb.SecureTransportCheck"
 
   runtime = "java8"
 
@@ -62,6 +46,12 @@ resource "aws_lambda_function" "lambda_test_1" {
 
   memory_size = 512
   timeout = 15
+}
+resource "aws_lambda_permission" "lambda_iam_test_permission_1" {
+  action        = "lambda:InvokeFunction"
+  function_name = "${aws_lambda_function.lambda_test_1.arn}"
+  principal     = "config.amazonaws.com"
+  statement_id  = "AllowExecutionFromConfig"
 }
 
 resource "aws_config_config_rule" "config_rule_1" {
@@ -73,5 +63,11 @@ resource "aws_config_config_rule" "config_rule_1" {
       message_type = "ScheduledNotification"
       maximum_execution_frequency = "TwentyFour_Hours"
     }
+    source_detail {
+      message_type = "ConfigurationItemChangeNotification"
+    }
+  }
+  scope {
+    compliance_resource_types = ["AWS::IAM::User"]
   }
 }
