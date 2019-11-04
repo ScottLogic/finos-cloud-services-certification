@@ -1,3 +1,8 @@
-variable "JAR_NAME" {
-  default = "../target/${project.artifactId}-${project.version}.${buildNumber}.jar"
+variable "jar_name" {
+  default = "../target/${project.artifactId}-${project.version}.r${buildNumber}.jar"
+}
+
+variable "deployment_name" {
+  type = "string"
+  default = "dev"
 }

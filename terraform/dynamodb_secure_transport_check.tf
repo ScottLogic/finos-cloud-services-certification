@@ -1,5 +1,5 @@
 resource "aws_iam_role" "lambda_iam_test" {
-  name = "lambda_iam_role_for_rules_test"
+  name = "${var.deployment_name}-lambda_iam_role_for_rules_test"
 
   path = "/service-role/"
 
@@ -55,7 +55,7 @@ resource "aws_lambda_permission" "lambda_iam_test_permission_1" {
 }
 
 resource "aws_config_config_rule" "config_rule_1" {
-  name = "config_rule_test_1"
+  name = "${var.deployment_name}-config_rule_test_1"
   source {
     owner = "CUSTOM_LAMBDA"
     source_identifier = "${aws_lambda_function.lambda_test_1.arn}"
