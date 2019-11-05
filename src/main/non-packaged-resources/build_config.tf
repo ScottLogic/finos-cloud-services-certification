@@ -4,5 +4,5 @@ variable "jar_name" {
 
 variable "deployment_name" {
   type = "string"
-  default = "dev"
+  description = "A name prefix used to make resources unique to this deployment."
 }
