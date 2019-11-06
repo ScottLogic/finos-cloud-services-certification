@@ -45,7 +45,7 @@ resource "aws_lambda_function" "lambda_test_1" {
   role = "${aws_iam_role.lambda_iam_test.arn}"
 
   memory_size = 512
-  timeout = 15
+  timeout = 60
 }
 resource "aws_lambda_permission" "lambda_iam_test_permission_1" {
   action        = "lambda:InvokeFunction"

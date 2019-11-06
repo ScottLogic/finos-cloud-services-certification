@@ -6,11 +6,12 @@ import com.scottlogic.compliance.ComplianceResult;
 import com.scottlogic.compliance.EventParser;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.config.model.ComplianceType;
+import software.amazon.awssdk.services.config.model.ResourceType;
 import software.amazon.awssdk.services.iam.IamClient;
-import software.amazon.awssdk.services.iam.model.EvaluationResult;
-import software.amazon.awssdk.services.iam.model.SimulatePrincipalPolicyRequest;
-import software.amazon.awssdk.services.iam.model.SimulatePrincipalPolicyResponse;
+import software.amazon.awssdk.services.iam.model.*;
 
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -30,8 +31,43 @@ public class SecureTransportCheck extends AbstractChecker {
         IamClient iam = IamClient.builder()
                 .region(Region.AWS_GLOBAL)
                 .build();
+
+        ComplianceType complianceType = checkUserDynamoTransport(iam, event.arn);
+
+        ComplianceResult complianceResult = new ComplianceResult(
+                event.complianceResourceId,
+                event.complianceResourceType,
+                event.orderingTimestamp,
+                complianceType
+        );
+        return Arrays.asList(complianceResult);
+    }
+
+    public List<ComplianceResult> getComplianceCheck(EventParser.PeriodicEvent event) {
+        IamClient iam = IamClient.builder()
+                .region(Region.AWS_GLOBAL)
+                .build();
+
+        List<User> users = iam.listUsers().users();
+
+        List<ComplianceResult> results = new ArrayList<>();
+        for (User user : users) {
+            results.add(
+                    new ComplianceResult(
+                            user.userId(),
+                            ResourceType.AWS_IAM_USER.toString(),
+                            Instant.now(),
+                            checkUserDynamoTransport(iam, user.arn())
+                    )
+            );
+        }
+
+        return results;
+    }
+
+    private ComplianceType checkUserDynamoTransport(IamClient iam, String userArn) {
         SimulatePrincipalPolicyResponse response = iam.simulatePrincipalPolicy(SimulatePrincipalPolicyRequest.builder()
-                .policySourceArn(event.arn)
+                .policySourceArn(userArn)
                 .actionNames("dynamodb:*")
                 .build());
 
@@ -45,12 +81,7 @@ public class SecureTransportCheck extends AbstractChecker {
         boolean requiresSecureTransport = results.get(0).missingContextValues().contains("aws:SecureTransport");
 
         ComplianceType complianceType = requiresSecureTransport ? ComplianceType.COMPLIANT : ComplianceType.NON_COMPLIANT;
-        ComplianceResult complianceResult = new ComplianceResult(
-                event.complianceResourceId,
-                event.complianceResourceType,
-                event.orderingTimestamp,
-                complianceType
-        );
-        return Arrays.asList(complianceResult);
+
+        return complianceType;
     }
 }
