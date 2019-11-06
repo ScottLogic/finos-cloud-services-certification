@@ -2,8 +2,8 @@ package com.scottlogic.compliance.dynamodb;
 
 import com.amazonaws.services.lambda.runtime.events.ConfigEvent;
 import com.scottlogic.compliance.AbstractChecker;
+import com.scottlogic.compliance.event.ComplianceChangeEvent;
 import com.scottlogic.compliance.ComplianceResult;
-import com.scottlogic.compliance.EventParser;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.config.model.ComplianceType;
 import software.amazon.awssdk.services.iam.IamClient;
@@ -12,6 +12,7 @@ import software.amazon.awssdk.services.iam.model.SimulatePrincipalPolicyRequest;
 import software.amazon.awssdk.services.iam.model.SimulatePrincipalPolicyResponse;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 
@@ -26,7 +27,7 @@ public class SecureTransportCheck extends AbstractChecker {
         tester.handleRequest(testConfigEvent, null);
     }
 
-    public List<ComplianceResult> getComplianceCheck(EventParser.ChangeEvent event) {
+    public List<ComplianceResult> getComplianceCheck(ComplianceChangeEvent event) {
         IamClient iam = IamClient.builder()
                 .region(Region.AWS_GLOBAL)
                 .build();
@@ -51,6 +52,6 @@ public class SecureTransportCheck extends AbstractChecker {
                 event.orderingTimestamp,
                 complianceType
         );
-        return Arrays.asList(complianceResult);
+        return Collections.singletonList(complianceResult);
     }
 }

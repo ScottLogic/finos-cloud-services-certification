@@ -1,5 +1,7 @@
 package com.scottlogic.compliance;
 
+import com.scottlogic.compliance.event.ComplianceEvent;
+
 import java.util.List;
 
 
