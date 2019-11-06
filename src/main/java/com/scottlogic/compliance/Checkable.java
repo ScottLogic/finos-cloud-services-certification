@@ -1,8 +1,10 @@
 package com.scottlogic.compliance;
 
-import software.amazon.awssdk.services.config.model.ComplianceType;
+import com.scottlogic.compliance.event.ComplianceEvent;
+
+import java.util.List;
 
 
 public interface Checkable {
-    ComplianceType getComplianceCheck(InvokingEvent ie);
+    List<ComplianceResult> getComplianceCheck(ComplianceEvent ie);
 }

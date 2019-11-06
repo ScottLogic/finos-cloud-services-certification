@@ -3,38 +3,54 @@ package com.scottlogic.compliance;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.ConfigEvent;
+import com.scottlogic.compliance.event.*;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.config.ConfigClient;
-import software.amazon.awssdk.services.config.model.ComplianceType;
 import software.amazon.awssdk.services.config.model.Evaluation;
 import software.amazon.awssdk.services.config.model.PutEvaluationsRequest;
 import software.amazon.awssdk.services.config.model.PutEvaluationsResponse;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.List;
+import java.util.stream.Collectors;
 
 
 import static java.util.Objects.isNull;
 
 
-public abstract class AbstractChecker implements RequestHandler<ConfigEvent, Void>, Checkable {
+public abstract class AbstractChecker implements RequestHandler<ConfigEvent, Void>, Checkable, CheckableVisitor {
     private SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH:mm:ss");
     private Context context;
 
+    @Override
+    public List<ComplianceResult> getComplianceCheck(ComplianceEvent event) {
+        return event.accept(this);
+    }
 
+    @Override
+    public List<ComplianceResult> getComplianceCheck(ComplianceChangeEvent event) {
+        throw new UnsupportedOperationException("Config rule does not support Change Events");
+    }
+
+    @Override
+    public List<ComplianceResult> getComplianceCheck(CompliancePeriodicEvent event) {
+        throw new UnsupportedOperationException("Config rule does not support Periodic Events");
+    }
 
     public Void handleRequest(ConfigEvent event, Context context) {
         this.context = context;
 
         log("-------------------------Invocation started: --------------" + sdf.format(new Date()));
-        log("invokingEvent " + event.toString());
+        log("invokingEvent " + event.getInvokingEvent());
+        log("ruleParameters " + event.getRuleParameters());
 
-        InvokingEvent invokingEvent = InvokingEvent.from(event.getInvokingEvent());
+        ComplianceEvent complianceEvent = ComplianceEventFactory.create(event);
 
-        ComplianceType complianceResult = getComplianceCheck(invokingEvent);
+        List<ComplianceResult> complianceResults = getComplianceCheck(complianceEvent);
 
 
-        PutEvaluationsRequest putEvaluationsRequest = getPutEvaluationsRequest(event, invokingEvent, complianceResult);
+        PutEvaluationsRequest putEvaluationsRequest = getPutEvaluationsRequest(event, complianceResults);
 
         log(putEvaluationsRequest.toString());
 
@@ -59,16 +75,16 @@ public abstract class AbstractChecker implements RequestHandler<ConfigEvent, Voi
         }
     }
 
-    private PutEvaluationsRequest getPutEvaluationsRequest(ConfigEvent event, InvokingEvent invokingEvent, ComplianceType complianceResult) {
-        Evaluation evaluation = Evaluation.builder()
-                .complianceResourceId(invokingEvent.complianceResourceId)
-                .complianceResourceType(invokingEvent.complianceResourceType)
-                .orderingTimestamp(invokingEvent.orderingTimestamp)
-                .complianceType(complianceResult)
-                .build();
+    private PutEvaluationsRequest getPutEvaluationsRequest(ConfigEvent event, List<ComplianceResult> complianceResults) {
+        List<Evaluation> evaluations = complianceResults.stream().map(complianceResult -> Evaluation.builder()
+                .complianceResourceId(complianceResult.complianceResourceId)
+                .complianceResourceType(complianceResult.complianceResourceType)
+                .orderingTimestamp(complianceResult.orderingTimestamp)
+                .complianceType(complianceResult.complianceType)
+                .build()).collect(Collectors.toList());
 
         return PutEvaluationsRequest.builder()
-                .evaluations(evaluation)
+                .evaluations(evaluations)
                 .resultToken(event.getResultToken())
                 .build();
     }
