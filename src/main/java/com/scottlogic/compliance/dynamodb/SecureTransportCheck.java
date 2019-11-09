@@ -11,7 +11,6 @@ import software.amazon.awssdk.services.iam.model.EvaluationResult;
 import software.amazon.awssdk.services.iam.model.SimulatePrincipalPolicyRequest;
 import software.amazon.awssdk.services.iam.model.SimulatePrincipalPolicyResponse;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
